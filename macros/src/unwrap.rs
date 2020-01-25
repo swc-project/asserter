@@ -1,35 +1,49 @@
 use pmutil::{q, Quote, ToTokensExt};
-use proc_macro2::TokenStream;
+use proc_macro2::{Ident, TokenStream};
 use syn::{
     fold::{fold_block, Fold},
     parse,
     parse::{Parse, ParseStream},
-    parse2, Block, Expr, ExprBlock, ExprIf, ExprLet, ExprPath, LitStr, Macro, Pat, Stmt, Token,
+    parse2,
+    punctuated::Punctuated,
+    token::Token,
+    visit::Visit,
+    Block, Expr, ExprAssign, ExprBlock, ExprIf, ExprLet, ExprPath, LitStr, Macro, Pat, PatIdent,
+    PatTuple, Stmt, Token,
 };
 
-pub fn expand(input: TokenStream) -> Quote {
-    let input: Input = parse2(input).expect("unpack!(): failed to parse input");
+pub fn expand(input: TokenStream) -> Expr {
+    let input: Input = parse2(input).expect("unwrap!(): failed to parse input");
+    let idents = {
+        let mut v = PatIdentCollector::default();
+        v.visit_pat(&input.pat);
+        v.ident
+    };
 
     let let_expr = Expr::Let(ExprLet {
-        attrs: Default::default(),
+        attrs: vec![],
         let_token: Default::default(),
-        pat: input.pat,
+        pat: Pat::Tuple(PatTuple {
+            attrs: vec![],
+            paren_token: Default::default(),
+            elems: idents,
+        }),
         eq_token: Default::default(),
         expr: Box::new(Expr::Path(input.expr)),
     });
 
-    let if_let_expr = Expr::If(ExprIf {
-        attrs: Default::default(),
-        if_token: Default::default(),
-        cond: Box::new(let_expr),
-        then_branch: Block {
-            stmts: vec![],
-            brace_token: Default::default(),
-        },
-        else_branch: Some((Default::default(), q!(Vars {}, ({ panic!() })).parse())),
-    });
+    let_expr
+}
 
-    q!(Vars { if_let_expr }, ({ if_let_expr })).into()
+#[derive(Default)]
+struct PatIdentCollector {
+    ident: Punctuated<Pat, Token![,]>,
+}
+
+impl Visit<'_> for PatIdentCollector {
+    fn visit_pat_ident(&mut self, i: &PatIdent) {
+        self.ident.push(Pat::Ident(i.clone()));
+    }
 }
 
 struct Input {

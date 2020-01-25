@@ -31,7 +31,7 @@ impl Fold for Expander {
     fn fold_expr(&mut self, e: Expr) -> Expr {
         match e {
             Expr::Macro(e) if e.mac.path.is_ident("unwrap") => {
-                let e = self::unwrap::expand(e.mac.tokens).parse();
+                let e = self::unwrap::expand(e.mac.tokens);
                 fold_expr(self, e)
             }
 

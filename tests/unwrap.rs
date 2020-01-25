@@ -5,7 +5,7 @@ use asserter::*;
 fn simple() {
     let foo = Some("f");
 
-    let foo = unwrap!(foo as Some(foo));
+    unwrap!(foo as Some(foo));
     assert_eq!(foo, "f");
 }
 
@@ -15,7 +15,7 @@ fn simple() {
 fn simple_panic() {
     let foo: Option<String> = None;
 
-    let foo = unwrap!(foo as Some(foo));
+    unwrap!(foo as Some(foo));
 }
 
 enum Complex {
@@ -28,7 +28,7 @@ enum Complex {
 fn complex() {
     let foo = Complex::Boxed(Box::new(Complex::Normal(String::from("foo"))));
 
-    let foo = unwrap!(foo as Complex::Boxed(unbox!(Complex::Normal(s))));
+    unwrap!(foo as Complex::Boxed(unbox!(Complex::Normal(s))));
 
     assert_eq!(s, "foo");
 }

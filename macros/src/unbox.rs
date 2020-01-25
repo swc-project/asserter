@@ -10,5 +10,5 @@ use syn::{
 pub fn expand(input: TokenStream) -> Quote {
     let input: Pat = parse2(input).expect("unbox!(): Expected expression");
 
-    q!(Vars { input }, ({ *input }))
+    q!(Vars { input }, (box input))
 }

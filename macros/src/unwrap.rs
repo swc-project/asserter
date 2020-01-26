@@ -104,6 +104,10 @@ fn expand_to_if_let(expr: Expr, mut pat: Pat, cons: Vec<Stmt>) -> Expr {
             );
         }
 
+        Pat::Reference(p) => {
+            return expand_to_if_let(expr, *p.pat.clone(), cons);
+        }
+
         _ => unimplemented!("Pattern: {:?}", pat),
     }
 }

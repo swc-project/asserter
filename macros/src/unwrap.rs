@@ -47,6 +47,8 @@ fn expand_to_if_let(expr: Expr, mut pat: Pat, cons: Vec<Stmt>) -> Expr {
             })
         }
 
+        // Temporarily true
+        Pat::Or(_) | Pat::Range(_) | Pat::Rest(_) | Pat::Slice(_) | Pat::Type(_) => true,
         _ => false,
     } {
         // We cannot expand it more.
@@ -116,14 +118,6 @@ fn expand_to_if_let(expr: Expr, mut pat: Pat, cons: Vec<Stmt>) -> Expr {
             return expand_to_if_let(expr, *p.pat.clone(), cons);
         }
 
-        //        Pat::Or(_) => {}
-        //        Pat::Range(_) => {}
-        //        Pat::Rest(_) => {}
-        //        Pat::Slice(_) => {}
-        //        Pat::Struct(_) => {}
-        //        Pat::Tuple(_) => {}
-        //        Pat::TupleStruct(_) => {}
-        //        Pat::Type(_) => {}
         Pat::Wild(_) => panic!("uwnrap() does not accept wildcard pattern"),
 
         _ => unimplemented!("Pat: {:?}", pat),

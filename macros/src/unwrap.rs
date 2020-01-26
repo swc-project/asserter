@@ -1,5 +1,5 @@
 use pmutil::{q, Quote, ToTokensExt};
-use proc_macro2::{Ident, TokenStream};
+use proc_macro2::{Ident, Span, TokenStream};
 use syn::{
     fold::{fold_block, fold_pat, Fold},
     parse,
@@ -19,7 +19,18 @@ pub fn expand(input: TokenStream) -> Expr {
     let idents = {
         let mut v = PatIdentCollector::default();
         v.visit_pat(&input.pat);
-        v.ident.push_punct(Default::default());
+        if v.ident.is_empty() {
+            v.ident.push(Pat::Ident(PatIdent {
+                attrs: vec![],
+                by_ref: None,
+                mutability: None,
+                ident: Ident::new("_", Span::call_site()),
+                subpat: None,
+            }))
+        } else {
+            v.ident.push_punct(Default::default());
+        }
+
         v.ident
     };
 

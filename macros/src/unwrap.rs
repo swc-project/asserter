@@ -36,13 +36,16 @@ fn expand_to_if_let(expr: Expr, mut pat: Pat, cons: Vec<Stmt>) -> Expr {
     }
 
     if match pat {
-        Pat::Ident(..) | Pat::Lit(..) | Pat::Tuple(..) => true,
+        Pat::Ident(..) | Pat::Path(..) | Pat::Lit(..) | Pat::Tuple(..) | Pat::Macro(..) => true,
         Pat::TupleStruct(ref p) if p.pat.elems.len() == 1 => match p.pat.elems.first().unwrap() {
             Pat::Ident(..) | Pat::Lit(_) => true,
             _ => false,
         },
+
         _ => false,
     } {
+        // We cannot expand it more.
+
         let let_expr = Expr::Let(ExprLet {
             attrs: vec![],
             let_token: Default::default(),
@@ -108,7 +111,17 @@ fn expand_to_if_let(expr: Expr, mut pat: Pat, cons: Vec<Stmt>) -> Expr {
             return expand_to_if_let(expr, *p.pat.clone(), cons);
         }
 
-        _ => unimplemented!("Pattern: {:?}", pat),
+        //        Pat::Or(_) => {}
+        //        Pat::Range(_) => {}
+        //        Pat::Rest(_) => {}
+        //        Pat::Slice(_) => {}
+        //        Pat::Struct(_) => {}
+        //        Pat::Tuple(_) => {}
+        //        Pat::TupleStruct(_) => {}
+        //        Pat::Type(_) => {}
+        Pat::Wild(_) => panic!("uwnrap() does not accept wildcard pattern"),
+
+        _ => unimplemented!("Pat: {:?}", pat),
     }
 }
 

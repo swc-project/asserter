@@ -19,6 +19,7 @@ use asserter::*;
 //}
 
 enum Complex {
+    Path,
     Normal(String),
     Boxed(Box<Complex>),
     Ref(&'static Complex),
@@ -34,12 +35,20 @@ fn complex_boxed() {
     assert_eq!(s, "foo");
 }
 
-//#[test]
-//#[asserter]
-//fn complex_ref() {
-//    let foo = Complex::Ref(&Complex::Normal(String::from("foo")));
-//
-//    unwrap!(foo as Complex::Ref(&Complex::Normal(s)));
-//
-//    assert_eq!(s, "foo");
-//}
+#[test]
+#[asserter]
+fn complex_ref() {
+    let foo = Complex::Ref(&Complex::Normal(String::from("foo")));
+
+    unwrap!(foo as Complex::Ref(&Complex::Normal(s)));
+
+    assert_eq!(s, "foo");
+}
+
+#[test]
+#[asserter]
+fn complex_path() {
+    let foo = Complex::Path;
+
+    unwrap!(foo as Complex::Path);
+}

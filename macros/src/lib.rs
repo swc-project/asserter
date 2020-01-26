@@ -38,15 +38,4 @@ impl Fold for Expander {
             _ => fold_expr(self, e),
         }
     }
-
-    fn fold_pat(&mut self, p: Pat) -> Pat {
-        match p {
-            Pat::Macro(p) if p.mac.path.is_ident("unbox") => {
-                let p = self::unbox::expand(p.mac.tokens).parse();
-                fold_pat(self, p)
-            }
-
-            _ => fold_pat(self, p),
-        }
-    }
 }

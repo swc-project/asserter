@@ -5,11 +5,11 @@ use syn::{
     parse,
     parse::{Parse, ParseStream},
     parse2,
-    punctuated::Punctuated,
+    punctuated::{Pair, Punctuated},
     token::Token,
     visit::Visit,
     Arm, Block, Expr, ExprAssign, ExprBlock, ExprIf, ExprLet, ExprMatch, ExprPath, LitStr, Macro,
-    Pat, PatIdent, PatMacro, PatTuple, Stmt, Token,
+    Pat, PatIdent, PatMacro, PatTuple, PatTupleStruct, Stmt, Token,
 };
 
 pub fn expand(input: TokenStream, cons: Vec<Stmt>) -> Expr {
@@ -20,7 +20,7 @@ pub fn expand(input: TokenStream, cons: Vec<Stmt>) -> Expr {
     expand_to_if_let(Expr::Path(input.expr), input.pat, cons)
 }
 
-fn expand_to_if_let(expr: Expr, pat: Pat, cons: Vec<Stmt>) -> Expr {
+fn expand_to_if_let(expr: Expr, mut pat: Pat, cons: Vec<Stmt>) -> Expr {
     let else_branch = q!(
         Vars {
             s: format!("failed to unwrap `{}` as `{}`", expr.dump(), pat.dump())
@@ -29,24 +29,73 @@ fn expand_to_if_let(expr: Expr, pat: Pat, cons: Vec<Stmt>) -> Expr {
     )
     .parse();
 
-    let let_expr = Expr::Let(ExprLet {
-        attrs: vec![],
-        let_token: Default::default(),
-        pat,
-        eq_token: Default::default(),
-        expr: Box::new(expr),
-    });
+    if let Pat::Tuple(ref p) = pat {
+        if p.elems.len() == 1 {
+            return expand_to_if_let(expr, p.elems.first().unwrap().clone(), cons);
+        }
+    }
 
-    Expr::If(ExprIf {
-        attrs: vec![],
-        if_token: Default::default(),
-        cond: Box::new(let_expr),
-        then_branch: Block {
-            brace_token: Default::default(),
-            stmts: cons,
+    if match pat {
+        Pat::Ident(..) | Pat::Lit(..) | Pat::Tuple(..) => true,
+        Pat::TupleStruct(ref p) if p.pat.elems.len() == 1 => match p.pat.elems.first().unwrap() {
+            Pat::Ident(..) | Pat::Lit(_) => true,
+            _ => false,
         },
-        else_branch: Some((Default::default(), else_branch)),
-    })
+        _ => false,
+    } {
+        let let_expr = Expr::Let(ExprLet {
+            attrs: vec![],
+            let_token: Default::default(),
+            pat,
+            eq_token: Default::default(),
+            expr: Box::new(expr),
+        });
+
+        return Expr::If(ExprIf {
+            attrs: vec![],
+            if_token: Default::default(),
+            cond: Box::new(let_expr),
+            then_branch: Block {
+                brace_token: Default::default(),
+                stmts: cons,
+            },
+            else_branch: Some((Default::default(), else_branch)),
+        });
+    }
+
+    match pat {
+        // TODO: Remove length restriction. This can be done by using tuple.s
+        Pat::TupleStruct(ref mut p) if p.pat.elems.len() == 1 => {
+            println!("PAT: {}", p.dump());
+
+            let tmp_ident = Ident::new("tmp", Span::call_site());
+            let tmp_expr = Expr::Path(ExprPath {
+                attrs: vec![],
+                qself: None,
+                path: tmp_ident.clone().into(),
+            });
+
+            //
+            let stmt = Stmt::Semi(
+                expand_to_if_let(tmp_expr, Pat::Tuple(p.pat.clone()), cons),
+                Default::default(),
+            );
+            for mut p in p.pat.elems.pairs_mut() {
+                let v = p.value_mut();
+                **v = Pat::Ident(PatIdent {
+                    attrs: vec![],
+                    by_ref: None,
+                    mutability: None,
+                    ident: tmp_ident.clone(),
+                    subpat: None,
+                });
+            }
+
+            return expand_to_if_let(expr, pat, vec![stmt]);
+        }
+
+        _ => unimplemented!("Pattern: {:?}", pat),
+    }
 }
 
 struct Input {

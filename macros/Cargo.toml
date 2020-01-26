@@ -16,4 +16,4 @@ proc-macro = true
 [dependencies]
 pmutil = "0.5.3"
 proc-macro2 = "1"
-syn = { version = "1", features = ["fold", "full", "visit", "derive"] }
+syn = { version = "1", features = ["fold", "full", "visit", "derive", "extra-traits"] }

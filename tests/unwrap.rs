@@ -1,22 +1,22 @@
 use asserter::*;
-
-#[test]
-#[asserter]
-fn simple() {
-    let foo = Some("f");
-
-    unwrap!(foo as Some(foo));
-    assert_eq!(foo, "f");
-}
-
-#[test]
-#[should_panic]
-#[asserter]
-fn simple_panic() {
-    let foo: Option<String> = None;
-
-    unwrap!(foo as Some(foo));
-}
+//
+//#[test]
+//#[asserter]
+//fn simple() {
+//    let foo = Some("f");
+//
+//    unwrap!(foo as Some(foo));
+//    assert_eq!(foo, "f");
+//}
+//
+//#[test]
+//#[should_panic]
+//#[asserter]
+//fn simple_panic() {
+//    let foo: Option<String> = None;
+//
+//    unwrap!(foo as Some(foo));
+//}
 
 enum Complex {
     Normal(String),

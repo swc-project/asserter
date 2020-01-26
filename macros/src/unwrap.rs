@@ -12,41 +12,41 @@ use syn::{
     Pat, PatIdent, PatMacro, PatTuple, Stmt, Token,
 };
 
-pub fn expand(input: TokenStream) -> Expr {
+pub fn expand(input: TokenStream, cons: Vec<Stmt>) -> Expr {
     let mut input: Input = parse2(input).expect("unwrap!(): failed to parse input");
+
+    let else_branch = q!(
+        Vars {
+            s: format!(
+                "failed to unwrap `{}` as `{}`",
+                input.expr.dump(),
+                input.pat.dump()
+            )
+        },
+        { panic!(s) }
+    )
+    .parse();
+
     input.pat = Expander.fold_pat(input.pat);
-
-    let idents = {
-        let mut v = PatIdentCollector::default();
-        v.visit_pat(&input.pat);
-        if v.ident.is_empty() {
-            v.ident.push(Pat::Ident(PatIdent {
-                attrs: vec![],
-                by_ref: None,
-                mutability: None,
-                ident: Ident::new("_", Span::call_site()),
-                subpat: None,
-            }))
-        } else {
-            v.ident.push_punct(Default::default());
-        }
-
-        v.ident
-    };
 
     let let_expr = Expr::Let(ExprLet {
         attrs: vec![],
         let_token: Default::default(),
-        pat: Pat::Tuple(PatTuple {
-            attrs: vec![],
-            paren_token: Default::default(),
-            elems: idents,
-        }),
+        pat: input.pat.clone(),
         eq_token: Default::default(),
         expr: Box::new(expand_match(Expr::Path(input.expr), input.pat)),
     });
 
-    let_expr
+    Expr::If(ExprIf {
+        attrs: vec![],
+        if_token: Default::default(),
+        cond: Box::new(let_expr),
+        then_branch: Block {
+            brace_token: Default::default(),
+            stmts: cons,
+        },
+        else_branch: Some((Default::default(), else_branch)),
+    })
 }
 
 fn expand_match(expr: Expr, pat: Pat) -> Expr {
@@ -64,17 +64,6 @@ fn expand_match(expr: Expr, pat: Pat) -> Expr {
             comma: None,
         }],
     })
-}
-
-#[derive(Default)]
-struct PatIdentCollector {
-    ident: Punctuated<Pat, Token![,]>,
-}
-
-impl Visit<'_> for PatIdentCollector {
-    fn visit_pat_ident(&mut self, i: &PatIdent) {
-        self.ident.push(Pat::Ident(i.clone()));
-    }
 }
 
 struct Input {

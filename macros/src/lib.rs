@@ -28,14 +28,34 @@ pub fn asserter(
 struct Expander;
 
 impl Fold for Expander {
-    fn fold_expr(&mut self, e: Expr) -> Expr {
-        match e {
-            Expr::Macro(e) if e.mac.path.is_ident("unwrap") => {
-                let e = self::unwrap::expand(e.mac.tokens);
-                fold_expr(self, e)
-            }
+    fn fold_block(&mut self, b: Block) -> Block {
+        let b = fold_block(self, b);
+        let mut stmts = vec![];
 
-            _ => fold_expr(self, e),
+        let mut base = b.stmts.into_iter();
+        loop {
+            let stmt = match base.next() {
+                Some(v) => v,
+                None => break,
+            };
+
+            match stmt {
+                Stmt::Semi(Expr::Macro(mac), semi) if mac.mac.path.is_ident("unwrap") => {
+                    let stmt =
+                        Stmt::Semi(crate::unwrap::expand(mac.mac.tokens, base.collect()), semi);
+                    stmts.push(stmt);
+                    break;
+                }
+                Stmt::Expr(Expr::Macro(mac)) if mac.mac.path.is_ident("unwrap") => {
+                    let stmt = Stmt::Expr(crate::unwrap::expand(mac.mac.tokens, base.collect()));
+                    stmts.push(stmt);
+                    break;
+                }
+
+                _ => stmts.push(stmt),
+            }
         }
+
+        Block { stmts, ..b }
     }
 }

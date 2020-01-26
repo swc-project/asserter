@@ -34,7 +34,7 @@ pub fn expand(input: TokenStream, cons: Vec<Stmt>) -> Expr {
         let_token: Default::default(),
         pat: input.pat.clone(),
         eq_token: Default::default(),
-        expr: Box::new(expand_match(Expr::Path(input.expr), input.pat)),
+        expr: Box::new(Expr::Path(input.expr)),
     });
 
     Expr::If(ExprIf {
@@ -46,23 +46,6 @@ pub fn expand(input: TokenStream, cons: Vec<Stmt>) -> Expr {
             stmts: cons,
         },
         else_branch: Some((Default::default(), else_branch)),
-    })
-}
-
-fn expand_match(expr: Expr, pat: Pat) -> Expr {
-    Expr::Match(ExprMatch {
-        attrs: vec![],
-        match_token: Default::default(),
-        expr: Box::new(expr),
-        brace_token: Default::default(),
-        arms: vec![Arm {
-            attrs: vec![],
-            pat,
-            guard: None,
-            fat_arrow_token: Default::default(),
-            body: q!(Vars {}, ({})).parse(),
-            comma: None,
-        }],
     })
 }
 
@@ -98,6 +81,8 @@ impl Fold for Expander {
                 fold_pat(self, p)
             }
 
+            // TODO: use ref
+            // Pat::Reference(p) => *p.pat,
             _ => fold_pat(self, p),
         }
     }

@@ -1,15 +1,11 @@
-use pmutil::{q, Quote, ToTokensExt};
+use pmutil::{q, ToTokensExt};
 use proc_macro2::{Ident, Span, TokenStream};
 use syn::{
-    fold::{fold_block, fold_pat, Fold},
+    fold::{fold_pat, Fold},
     parse,
     parse::{Parse, ParseStream},
-    parse2,
-    punctuated::{Pair, Punctuated},
-    token::Token,
-    visit::Visit,
-    Arm, Block, Expr, ExprAssign, ExprBlock, ExprIf, ExprLet, ExprMatch, ExprPath, ExprUnary,
-    LitStr, Macro, Pat, PatIdent, PatMacro, PatTuple, PatTupleStruct, Stmt, Token, UnOp,
+    parse2, Block, Expr, ExprIf, ExprLet, ExprPath, ExprUnary, LitStr, Pat, PatIdent, Stmt, Token,
+    UnOp,
 };
 
 pub fn expand(input: TokenStream, cons: Vec<Stmt>) -> Expr {
@@ -130,11 +126,12 @@ fn expand_to_if_let(expr: Expr, mut pat: Pat, cons: Vec<Stmt>) -> Expr {
 
 struct Input {
     expr: ExprPath,
-    _as_token: Token![as],
+    _as_token: Option<Token![as]>,
+    _first_comma_token: Option<Token![,]>,
     pat: Pat,
     _comma_token: Option<Token![,]>,
-    msg: Option<LitStr>,
-    args: TokenStream,
+    _msg: Option<LitStr>,
+    _args: TokenStream,
 }
 
 impl Parse for Input {
@@ -142,10 +139,11 @@ impl Parse for Input {
         Ok(Input {
             expr: i.parse()?,
             _as_token: i.parse()?,
+            _first_comma_token: i.parse()?,
             pat: i.parse()?,
             _comma_token: i.parse()?,
-            msg: i.parse()?,
-            args: i.parse()?,
+            _msg: i.parse()?,
+            _args: i.parse()?,
         })
     }
 }

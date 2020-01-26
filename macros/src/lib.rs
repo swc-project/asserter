@@ -2,10 +2,8 @@ extern crate proc_macro;
 
 use pmutil::ToTokensExt;
 use syn::{
-    fold::{fold_block, fold_expr, fold_pat, Fold},
-    parse::{self, Parse, ParseStream},
-    parse2, Block, Error, Expr, ExprBlock, ExprIf, ExprLet, ExprMacro, ExprPath, ImplItem, Item,
-    Macro, Pat, Stmt, Token,
+    fold::{fold_block, Fold},
+    parse2, Block, Expr, ImplItem, Item, Stmt,
 };
 
 mod unbox;

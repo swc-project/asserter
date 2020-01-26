@@ -15,26 +15,26 @@ use syn::{
 pub fn expand(input: TokenStream, cons: Vec<Stmt>) -> Expr {
     let mut input: Input = parse2(input).expect("unwrap!(): failed to parse input");
 
+    input.pat = Expander.fold_pat(input.pat);
+
+    expand_to_if_let(Expr::Path(input.expr), input.pat, cons)
+}
+
+fn expand_to_if_let(expr: Expr, pat: Pat, cons: Vec<Stmt>) -> Expr {
     let else_branch = q!(
         Vars {
-            s: format!(
-                "failed to unwrap `{}` as `{}`",
-                input.expr.dump(),
-                input.pat.dump()
-            )
+            s: format!("failed to unwrap `{}` as `{}`", expr.dump(), pat.dump())
         },
         { panic!(s) }
     )
     .parse();
 
-    input.pat = Expander.fold_pat(input.pat);
-
     let let_expr = Expr::Let(ExprLet {
         attrs: vec![],
         let_token: Default::default(),
-        pat: input.pat.clone(),
+        pat,
         eq_token: Default::default(),
-        expr: Box::new(Expr::Path(input.expr)),
+        expr: Box::new(expr),
     });
 
     Expr::If(ExprIf {

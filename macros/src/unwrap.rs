@@ -37,10 +37,13 @@ fn expand_to_if_let(expr: Expr, mut pat: Pat, cons: Vec<Stmt>) -> Expr {
 
     if match pat {
         Pat::Ident(..) | Pat::Path(..) | Pat::Lit(..) | Pat::Tuple(..) | Pat::Macro(..) => true,
-        Pat::TupleStruct(ref p) if p.pat.elems.len() == 1 => match p.pat.elems.first().unwrap() {
-            Pat::Ident(..) | Pat::Lit(_) => true,
-            _ => false,
-        },
+        Pat::TupleStruct(ref p) => {
+            // If all element is simple, preserve it.
+            p.pat.elems.iter().all(|p| match p {
+                Pat::Ident(..) | Pat::Lit(_) => true,
+                _ => false,
+            })
+        }
 
         _ => false,
     } {

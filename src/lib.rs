@@ -7,6 +7,7 @@
 //! ```rust
 //! use asserter::*;
 //!
+//! #[asserter]
 //! fn main () {
 //!     let foo = Some("example");
 //!
@@ -24,6 +25,8 @@
 //! enum Complex {
 //!     Struct { foo: usize, bar: usize },
 //! }
+//!
+//! #[asserter]
 //! fn main () {
 //!     let foo = Complex::Struct { foo: 1, bar: 2 };
 //!
@@ -35,14 +38,18 @@
 //! Note that you **can** use box_patterns inside `unwrap!()` (on stable).
 //!
 //! ```rust
+//! use asserter::*;
+//!
 //! enum Complex {
 //!     Normal(usize),
 //!     Boxed(Box<Complex>),
 //! }
+//!
+//! #[asserter]
 //! fn main () {
 //!     let foo = Complex::Boxed(Box::new(Complex::Normal(0)));
 //!
-//!     unwrap!(foo as box Complex::Boxed(Complex::Normal(v)));
+//!     unwrap!(foo as Complex::Boxed(box Complex::Normal(v)));
 //!     assert_eq!(v, 0);
 //! }
 //! ```
@@ -52,16 +59,19 @@
 //!
 //! If you want rustfmt to work correctly while unwrapping box, there's a helper
 //! for it.
-//!
 //! ```rust
+//! use asserter::*;
+//!
 //! enum Complex {
 //!     Normal(usize),
 //!     Boxed(Box<Complex>),
 //! }
+//!
+//! #[asserter]
 //! fn main () {
 //!     let foo = Complex::Boxed(Box::new(Complex::Normal(0)));
 //!
-//!     unwrap!(foo as unbox!(Complex::Boxed(Complex::Normal(v))));
+//!     unwrap!(foo as Complex::Boxed(unbox!(Complex::Normal(v))));
 //!     assert_eq!(v, 0);
 //! }
 //! ```

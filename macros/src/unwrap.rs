@@ -8,8 +8,8 @@ use syn::{
     punctuated::{Pair, Punctuated},
     token::Token,
     visit::Visit,
-    Arm, Block, Expr, ExprAssign, ExprBlock, ExprIf, ExprLet, ExprMatch, ExprPath, LitStr, Macro,
-    Pat, PatIdent, PatMacro, PatTuple, PatTupleStruct, Stmt, Token,
+    Arm, Block, Expr, ExprAssign, ExprBlock, ExprIf, ExprLet, ExprMatch, ExprPath, ExprUnary,
+    LitStr, Macro, Pat, PatIdent, PatMacro, PatTuple, PatTupleStruct, Stmt, Token, UnOp,
 };
 
 pub fn expand(input: TokenStream, cons: Vec<Stmt>) -> Expr {
@@ -64,11 +64,9 @@ fn expand_to_if_let(expr: Expr, mut pat: Pat, cons: Vec<Stmt>) -> Expr {
     }
 
     match pat {
-        // TODO: Remove length restriction. This can be done by using tuple.s
+        // TODO: Remove length restriction. This can be done by using tuples.
         Pat::TupleStruct(ref mut p) if p.pat.elems.len() == 1 => {
-            println!("PAT: {}", p.dump());
-
-            let tmp_ident = Ident::new("tmp", Span::call_site());
+            let tmp_ident = Ident::new("_tmp", Span::call_site());
             let tmp_expr = Expr::Path(ExprPath {
                 attrs: vec![],
                 qself: None,
@@ -92,6 +90,18 @@ fn expand_to_if_let(expr: Expr, mut pat: Pat, cons: Vec<Stmt>) -> Expr {
             }
 
             return expand_to_if_let(expr, pat, vec![stmt]);
+        }
+
+        Pat::Box(p) => {
+            return expand_to_if_let(
+                Expr::Unary(ExprUnary {
+                    attrs: vec![],
+                    op: UnOp::Deref(Default::default()),
+                    expr: Box::new(expr),
+                }),
+                *p.pat.clone(),
+                cons,
+            );
         }
 
         _ => unimplemented!("Pattern: {:?}", pat),
